@@ -1,0 +1,75 @@
+---
+- name: "Laboratorio de Facts"
+  hosts: nodo01
+ 
+  tasks:
+  - name: "Hostname y su hora"
+    debug:
+      msg: "El nodo {{ ansible_hostname }} tiene la hora: {{ ansible_date_time.time}}"
+  - name: "Poner timezone en Europe/Moscow"
+    timezone:
+      name: Europe/Moscow
+  - name: "Mirar HORA DESPUES con comando"
+    command: "/usr/bin/date"
+    register: hora_despues
+  - name: "imprimir hora_despues"
+    debug:
+      msg: "La hora despues es: {{ hora_despues.stdout_lines[0] }}"
+      
+
+  - name: "Crear fichero"
+    file:
+        path: "/tmp/datos_horario_{{ ansible_hostname }}.txt"
+        state: touch
+        mode: 0655
+  - name: "Anadir datos al fichero"
+    lineinfile:
+      path: "/tmp/datos_horario_{{ ansible_hostname }}.txt"
+      line: |
+        - La zona horaria antes del cambio es {{ ansible_date_time.tz}} y la hora {{ ansible_date_time.time}}
+        - La hora y zona horaria despues del cambio es {{ hora_despues.stdout_lines[0] }}
+      create: yes
+  - name: "Volver a dejar en Europe/Madrid"
+    timezone:
+      name: Europe/Madrid
+
+# Nuevo play para nodo02
+- name: "Laboratorio de Delegacion de Tareas"
+  hosts: nodo02
+ 
+  tasks:
+  - name: "Hostname y su hora"
+    debug:
+      msg: "El nodo {{ ansible_hostname }} tiene la hora: {{ ansible_date_time.time}}"
+  - name: "Poner timezone en Asia/Tokyo"
+    timezone:
+      name: Asia/Tokyo
+  - name: "Mirar HORA DESPUES con comando"
+    command: "/usr/bin/date"
+    register: hora_despues
+  - name: "imprimir hora_despues"
+    debug:
+      msg: "La hora despues es: {{ hora_despues.stdout_lines[0] }}"    
+  - name: "Crear fichero"
+    file:
+        path: "/tmp/datos_horario_{{ ansible_hostname }}.txt"
+        state: touch
+        mode: 0655
+  - name: "Anadir datos al fichero"
+    lineinfile:
+      path: "/tmp/datos_horario_{{ ansible_hostname }}.txt"
+      line: |
+        - La zona horaria antes del cambio es {{ ansible_date_time.tz}} y la hora {{ ansible_date_time.time}}
+        - La hora y zona horaria despues del cambio es {{ hora_despues.stdout_lines[0] }}
+      create: yes
+  - name: "Volver a dejar en Europe/Madrid"
+    timezone:
+      name: Europe/Madrid
+
+  - name: "Copiar fichero generado en nodo02 al master"
+    fetch:
+      src: "/tmp/datos_horario_{{ ansible_hostname }}.txt"
+      dest: "/tmp/"
+      flat: yes
+# Falta como realizar el copiado del fichero del nodo02 en este segundo play
+...
